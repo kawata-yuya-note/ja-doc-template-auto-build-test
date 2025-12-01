@@ -1,21 +1,50 @@
+name: Publish Release Note
+
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*"
 
 jobs:
-  build:
+  publish_release:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Generate Changelog
-        run: echo "# Good things have arrived" > ${{ github.workspace }}-CHANGELOG.txt
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Fetch Tags
+        run: git fetch --tags --force
+
+      - name: Get tag message
+        id: get_tag_message
+        run: |
+          echo "::set-output name=message::$(git tag -l --format='%(contents:subject)' ${{ github.ref_name }})"
+
+      - name: Create Changelog
+        id: create_changelog
+        uses: mikepenz/release-changelog-builder-action@v3
+        with:
+          configurationJson: |
+            {
+              "template": "${{ steps.get_tag_message.outputs.message }} \n\n ## What's changed \n #{{UNCATEGORIZED}} \n\n **Full Changelog**: #{{RELEASE_DIFF}}",
+              "pr_template": "- #{{TITLE}} by @#{{AUTHOR}} in ##{{NUMBER}}",
+              "sort": {
+                "order": "DESC",
+                "on_property": "mergedAt"
+              }
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
       - name: Release
         uses: softprops/action-gh-release@v2
-        if: github.ref_type == 'tag'
         with:
-          body_path: ${{ github.workspace }}-CHANGELOG.txt
-          # note you'll typically need to create a personal access token
-          # with permissions to create releases in the other repo
-          token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          draft: false
+          prerelease: false
+          token: ${{ secrets.RELEASE_TOKEN }}
+          body: ${{ steps.create_changelog.outputs.changelog }}
