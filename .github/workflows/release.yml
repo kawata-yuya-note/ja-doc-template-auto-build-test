@@ -19,6 +19,15 @@ jobs:
         with:
           root_file: main.tex
           args: -file-line-error -halt-on-error -interaction=nonstopmode
+      - name: Rename PDF file
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#${GITHUB_REPOSITORY_OWNER}/}"
+          TAG_NAME="${GITHUB_REF_NAME}"
+          
+          ARCHIVE_NAME="${REPO_NAME}-${TAG_NAME}.pdf"
+          mv main.pdf $ARCHIVE_NAME
+          
+          echo "ARTIFACT_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
@@ -26,4 +35,4 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            main.pdf
+            ${{ env.ARTIFACT_NAME }}
