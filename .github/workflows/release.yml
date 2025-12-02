@@ -16,6 +16,8 @@ jobs:
         uses: actions/checkout@v6
       - name: Build - Compile LaTeX document
         uses: xu-cheng/latex-action@v4
+        env:
+          TZ: 'Asia/Tokyo'
         with:
           root_file: main.tex
           args: -file-line-error -halt-on-error -interaction=nonstopmode
